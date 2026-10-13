@@ -23,6 +23,12 @@ sys.path.insert(0, str(ROOT))
 
 CONFIG = {"index": "out/index.npz", "embedder": "gemini"}
 
+_MIME = {".html": "text/html", ".js": "text/javascript",
+         ".css": "text/css", ".json": "application/json",
+         ".png": "image/png", ".svg": "image/svg+xml",
+         ".ico": "image/x-icon", ".webp": "image/webp",
+         ".woff2": "font/woff2", ".woff": "font/woff"}
+
 
 def _read_json(name: str):
     path = Path("out") / name
@@ -38,8 +44,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", ctype + "; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
+
+    def _serve_static(self, rel: str) -> bool:
+        """Serve a file from the React dist (inbox UI)."""
+        dist = ROOT / "frontend" / "inbox-ui" / "dist"
+        target = (dist / rel).resolve()
+        if not str(target).startswith(str(dist.resolve())) or not target.is_file():
+            return False
+        self._send(target.read_bytes(),
+                   _MIME.get(target.suffix.lower(), "application/octet-stream"))
+        return True
 
     def _send_json(self, obj):
         self._send(json.dumps(obj, ensure_ascii=False).encode("utf-8"))
@@ -76,6 +93,25 @@ class Handler(BaseHTTPRequestHandler):
                              if t.get("customer_id") == cid])
         elif path == "/api/followups":
             self._send_json(_read_json("followups.json"))
+        elif path == "/api/inbox":
+            from frontend.inbox_api import store
+            self._send_json(store().list_conversations())
+        elif path.startswith("/api/inbox/"):
+            from frontend.inbox_api import store
+            tid = path[len("/api/inbox/"):]
+            conv = store().get_conversation(tid)
+            if conv:
+                self._send_json(conv)
+            else:
+                self._not_found()
+        elif path == "/inbox" or path == "/inbox/":
+            if not self._serve_static("index.html"):
+                self._send(
+                    b"<h1>Inbox UI not built</h1><p>Run: npm install && npm run build "
+                    b"inside frontend/inbox-ui</p>", "text/html")
+        elif path.startswith("/inbox/"):
+            if not self._serve_static(path[len("/inbox/"):]):
+                self._not_found()
         else:
             self._not_found()
 
@@ -108,8 +144,56 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(out)
             except Exception as exc:  # noqa: BLE001
                 self._send_json({"error": str(exc)})
+        elif path.startswith("/api/inbox/") and path.endswith("/reply"):
+            from frontend.inbox_api import store
+            tid = path[len("/api/inbox/"):-len("/reply")]
+            msg = store().add_message(tid, "agent", data.get("text", ""))
+            self._send_json({"ok": msg is not None,
+                             "conversation": store().get_conversation(tid)})
+        elif path.startswith("/api/inbox/") and path.endswith("/ai-reply"):
+            from customer_intelligence.service_agent import serve
+            from frontend.inbox_api import store
+            tid = path[len("/api/inbox/"):-len("/ai-reply")]
+            conv = store().get_conversation(tid)
+            if not conv:
+                self._send_json({"error": "unknown conversation"})
+                return
+            cust_msgs = [m for m in conv["messages"]
+                         if m["role"] == "customer"]
+            if not cust_msgs:
+                self._send_json({"error": "no customer message yet"})
+                return
+            try:
+                res = serve(conv["customer_id"],
+                            cust_msgs[-1]["text"],
+                            CONFIG["index"], CONFIG["embedder"])
+                store().add_message(tid, "agent", res["reply"])
+                self._send_json({
+                    "ok": True,
+                    "reply": res["reply"],
+                    "citations": res["citations"],
+                    "verification": {
+                        "passed": res["verification"]["passed"],
+                        "issues": res["verification"]["issues"],
+                    },
+                    "needs_approval": res["needs_approval"],
+                    "conversation": store().get_conversation(tid),
+                })
+            except Exception as exc:  # noqa: BLE001
+                self._send_json({"error": str(exc)})
+        elif path.startswith("/api/inbox/") and path.endswith("/close"):
+            from frontend.inbox_api import store
+            tid = path[len("/api/inbox/"):-len("/close")]
+            self._send_json({"ok": store().close(tid)})
         else:
             self._not_found()
+
+    def do_OPTIONS(self):  # noqa: N802
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
 
     def log_message(self, *args):  # quieter logs
         pass
