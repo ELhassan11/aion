@@ -1,0 +1,2 @@
+numpy>=1.24
+# Optional (heavy): sentence-transformers + torch for local embeddings (bge-m3)
