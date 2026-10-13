@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -115,8 +118,21 @@ class GeminiEmbedder(Embedder):
             req = urllib.request.Request(
                 url, data=body, headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(req, timeout=120) as r:
-                data = json.load(r)
+            for attempt in range(4):  # retries on transient errors
+                try:
+                    with urllib.request.urlopen(req, timeout=120) as r:
+                        data = json.load(r)
+                    break
+                except urllib.error.HTTPError as e:
+                    if e.code in (429, 500, 502, 503) and attempt < 3:
+                        wait = 5 * (2**attempt)
+                        print(
+                            f"Embeddings HTTP {e.code}, retrying in {wait}s...",
+                            file=sys.stderr,
+                        )
+                        time.sleep(wait)
+                        continue
+                    raise
             vectors.extend(e["values"] for e in data["embeddings"])
         self.dim = len(vectors[0])
         return vectors

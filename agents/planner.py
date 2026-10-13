@@ -27,12 +27,24 @@ from rag.hybrid import BM25, rrf_fuse, tokenize  # noqa: E402
 from rag.index import VectorIndex  # noqa: E402
 from rag.llm import generate  # noqa: E402
 
+try:
+    from agents.data_tools import TOOLS, call_tool
+
+    _TOOL_DOCS = "\n".join(
+        f"- {t.name}{json.dumps(t.parameters, ensure_ascii=False)}: {t.description}"
+        for t in TOOLS.values()
+    )
+except ImportError:  # data tools optional
+    TOOLS, call_tool, _TOOL_DOCS = {}, None, "(no data tools available)"
+
 
 @dataclass
 class PlanStep:
-    kind: str  # "search" | "answer"
+    kind: str  # "search" | "tool" | "answer"
     description: str
     query: str = ""
+    tool: str = ""
+    params: dict = field(default_factory=dict)
     status: str = "pending"
     result: str = ""
 
@@ -47,9 +59,14 @@ class PlannerAgent:
     def make_plan(self, goal: str) -> list[PlanStep]:
         prompt = (
             "Break this user goal into a short research plan. Reply with a JSON "
-            'array only, no markdown fences. Each step: {"kind": "search"|"answer", '
-            '"description": "...", "query": "..."} — "query" only for search steps. '
-            "Use 2-4 steps; the last step must be kind=answer. "
+            'array only, no markdown fences. Each step is one of:\n'
+            '- {"kind": "search", "description": "...", "query": "..."} — search documents\n'
+            '- {"kind": "tool", "description": "...", "tool": "<name>", '
+            '"params": {...}} — call a data tool\n'
+            '- {"kind": "answer", "description": "..."} — write the final answer\n'
+            "Available data tools:\n"
+            f"{_TOOL_DOCS}\n"
+            "Use 2-5 steps; the last step must be kind=answer. "
             "Write descriptions and queries in Arabic.\n"
             f"Goal: {goal}"
         )
@@ -62,6 +79,8 @@ class PlannerAgent:
                     kind=s["kind"],
                     description=s.get("description", ""),
                     query=s.get("query", ""),
+                    tool=s.get("tool", ""),
+                    params=s.get("params", {}) or {},
                 )
             )
         if not steps or steps[-1].kind != "answer":
@@ -91,13 +110,25 @@ class PlannerAgent:
                 if verbose:
                     for cid, text in hits[:3]:
                         print(f"  - {cid}: {text[:80].replace(chr(10), ' ')}...")
+            elif step.kind == "tool":
+                if call_tool is None:
+                    step.result = "أدوات البيانات غير متاحة"
+                else:
+                    out = call_tool(step.tool, **step.params)
+                    evidence.append((f"tool:{step.tool}", out[:1500]))
+                    step.result = out[:300]
+                if verbose:
+                    print(f"  أداة {step.tool} {step.params}")
+                    print(f"  النتيجة: {step.result[:200].replace(chr(10), ' ')}...")
             else:
                 context = "\n\n".join(
                     f"[{cid}]\n{text[:800]}" for cid, text in evidence
                 )
                 prompt = (
                     "أجب عن الهدف التالي بالعربية باستخدام الأدلة فقط. "
-                    "ضع [chunk-id] بعد كل معلومة كما في المصادر.\n\n"
+                    "بعد كل معلومة ضع معرف مصدرها بين قوسين مربعين بنفس الشكل "
+                    "الظاهر تمامًا، مثال: [doc-9e0dea2b69e4-c0000]. "
+                    "لا تكتب كلمة chunk-id أبدًا.\n\n"
                     f"الهدف: {goal}\n\nالأدلة:\n{context}"
                 )
                 step.result = generate(prompt)
@@ -106,7 +137,8 @@ class PlannerAgent:
             step.status = "done"
             trace.append(
                 {"kind": step.kind, "description": step.description,
-                 "query": step.query, "result": step.result}
+                 "query": step.query, "tool": step.tool,
+                 "params": step.params, "result": step.result}
             )
 
         answer = next(
