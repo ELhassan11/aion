@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 from backend.models import DocumentChunk, SourceType  # noqa: E402
 
 from .extractors import extract_docx, extract_pdf  # noqa: E402
+from .normalize import normalize_arabic  # noqa: E402
 
 
 def _doc_id(source_uri: str) -> str:
@@ -105,7 +106,7 @@ def reader_for(path: Path) -> SourceReader | None:
     return None
 
 
-def run_pipeline(input_dir: Path, output: Path) -> list[DocumentChunk]:
+def run_pipeline(input_dir: Path, output: Path, normalize: bool = True) -> list[DocumentChunk]:
     """Run extract -> transform -> load over every readable file in input_dir."""
     chunks: list[DocumentChunk] = []
     for path in sorted(input_dir.rglob("*")):
@@ -116,6 +117,8 @@ def run_pipeline(input_dir: Path, output: Path) -> list[DocumentChunk]:
             print(f"skip (no reader): {path.name}", file=sys.stderr)
             continue
         text = clean_text(reader.read(path))
+        if normalize:
+            text = normalize_arabic(text)
         if not text:
             print(f"skip (empty after cleaning): {path.name}", file=sys.stderr)
             continue
@@ -150,8 +153,11 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="AION ETL pipeline (P1-T01)")
     ap.add_argument("--input", required=True, help="input directory with raw documents")
     ap.add_argument("--output", required=True, help="output JSONL path")
+    ap.add_argument("--no-normalize", action="store_true",
+                    help="skip Arabic normalization (P1-T04)")
     args = ap.parse_args()
-    chunks = run_pipeline(Path(args.input), Path(args.output))
+    chunks = run_pipeline(Path(args.input), Path(args.output),
+                          normalize=not args.no_normalize)
     print(f"wrote {len(chunks)} chunks to {args.output}")
 
 
