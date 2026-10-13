@@ -1,5 +1,6 @@
 # البنية الكاملة للمشروع — تُستكمل في مرحلة التأسيس (P0)
 # التشغيل: docker compose up --build
+# التحقق: curl localhost:8000/health  ثم  curl localhost:8000/ready
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -27,16 +28,15 @@ services:
     ports:
       - "6379:6379"
 
-  # تُضاف خدمة الـ API هنا في P0-T02
-  # api:
-  #   build: ./backend
-  #   env_file: .env
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     - postgres
-  #     - neo4j
-  #     - redis
+  api:
+    build: ./backend
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - neo4j
+      - redis
 
 volumes:
   pgdata:
