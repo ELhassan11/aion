@@ -23,7 +23,7 @@ from rag.index import VectorIndex  # noqa: E402
 from rag.llm import generate  # noqa: E402
 from rag.rerank import rerank  # noqa: E402
 
-CITATION_RE = re.compile(r"\[([a-z0-9][a-z0-9_-]*)\]")
+CITATION_RE = re.compile(r"\[(?:chunk-id:\s*)?([a-z0-9][a-z0-9_\-:.]*)\]")
 
 
 def generate_answer(query: str, passages: list[tuple[str, str]]) -> str:
@@ -31,8 +31,9 @@ def generate_answer(query: str, passages: list[tuple[str, str]]) -> str:
     context = "\n\n".join(f"[{cid}]\n{text[:800]}" for cid, text in passages)
     prompt = (
         "Answer the question in Arabic using ONLY the sources below. "
-        "After every factual claim, cite its source as [chunk-id] exactly as shown. "
-        "If the sources do not contain the answer, say so plainly.\n\n"
+        "After every factual claim, put its source id in square brackets "
+        "exactly as shown, e.g. [doc-9e0dea2b69e4-c0000]. "
+        "Never write the words 'chunk-id'.\n\n"
         f"Question: {query}\n\nSources:\n{context}"
     )
     return generate(prompt)
