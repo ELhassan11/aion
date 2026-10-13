@@ -11,6 +11,8 @@ class SourceType(str, Enum):
     DOCX = "docx"
     XLSX = "xlsx"
     CSV = "csv"
+    MARKDOWN = "markdown"
+    TEXT = "text"
     DATABASE = "database"
     API = "api"
 
