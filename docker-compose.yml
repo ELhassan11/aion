@@ -1,0 +1,43 @@
+# البنية الكاملة للمشروع — تُستكمل في مرحلة التأسيس (P0)
+# التشغيل: docker compose up --build
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: aion
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aion}
+      POSTGRES_DB: aion
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-aion-neo4j}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neodata:/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # تُضاف خدمة الـ API هنا في P0-T02
+  # api:
+  #   build: ./backend
+  #   env_file: .env
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - postgres
+  #     - neo4j
+  #     - redis
+
+volumes:
+  pgdata:
+  neodata:
