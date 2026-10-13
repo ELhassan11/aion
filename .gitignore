@@ -20,7 +20,9 @@ venv/
 Thumbs.db
 
 # Data & models (large files stay out of git)
-data/
+# البيانات: نستبعد الكل ما عدا العينات (data/sample مخصصة للتطوير والاختبار)
+data/*
+!data/sample/
 *.pdf
 *.docx
 *.xlsx
