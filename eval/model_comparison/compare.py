@@ -167,7 +167,7 @@ def main() -> None:
             f, ensure_ascii=False, indent=2,
         )
 
-    print("| النموذج | متوسط الدرجة |")
+    print("| Model | Avg Score |")
     print("|---|---|")
     for model, avg, _ in sorted(rows, key=lambda r: r[1], reverse=True):
         print(f"| {model} | {avg:.2f} |")

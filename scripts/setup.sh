@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# تجهيز بيئة العمل المحلية — يُشغّل مرة واحدة: ./scripts/setup.sh
+# Set up the local dev environment - run once: ./scripts/setup.sh
 set -euo pipefail
 
 command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
