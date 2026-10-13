@@ -6,14 +6,34 @@
 <title>AION — لوحة المتابعة</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f5f7fa; color: #1f2937; }
+  body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f5f7fa; color: #1f2937; display: flex; min-height: 100vh; }
+  #sidebar { width: 240px; flex-shrink: 0; background: #111827; color: #fff; height: 100vh; position: sticky; top: 0;
+             display: flex; flex-direction: column; padding: 22px 0 12px; }
+  #sidebar .logo { padding: 0 22px 20px; border-bottom: 1px solid #1f2937; margin-bottom: 12px; }
+  #sidebar .logo h1 { font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+  #sidebar .logo span { color: #9ca3af; font-size: 12px; }
+  #sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  #sidebar nav button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: right; background: none;
+             border: none; border-right: 3px solid transparent; color: #9ca3af; padding: 12px 22px;
+             font-size: 15px; cursor: pointer; font-family: inherit; transition: .15s; }
+  #sidebar nav button:hover { color: #fff; background: #1a2233; }
+  #sidebar nav button.active { color: #fff; background: #1f2937; border-right-color: #2563eb; font-weight: 600; }
+  #sidebar .foot { padding: 12px 22px; color: #6b7280; font-size: 11px; border-top: 1px solid #1f2937; }
+  #content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #topbar { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 14px 24px; font-size: 17px; font-weight: 700; }
   header { background: #111827; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
   header h1 { font-size: 20px; font-weight: 700; }
   header span { color: #9ca3af; font-size: 13px; }
   nav { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; display: flex; gap: 4px; }
   nav button { background: none; border: none; padding: 14px 16px; font-size: 15px; cursor: pointer; color: #6b7280; border-bottom: 3px solid transparent; font-family: inherit; }
   nav button.active { color: #111827; border-bottom-color: #2563eb; font-weight: 600; }
-  main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  main { padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+  @media (max-width: 720px) {
+    #sidebar { width: 64px; }
+    #sidebar .logo span, #sidebar nav button .lbl, #sidebar .foot { display: none; }
+    #sidebar .logo { padding: 0 0 16px; text-align: center; }
+    #sidebar nav button { justify-content: center; padding: 12px 0; }
+  }
   .tab { display: none; } .tab.active { display: block; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
@@ -47,18 +67,39 @@
   input, select { font-family: inherit; font-size: 14px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
   #chat-input { flex: 1; }
   .meta { font-size: 12px; color: #9ca3af; margin-top: 6px; }
+  #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: .25s; z-index: 40; }
+  #overlay.open { opacity: 1; pointer-events: auto; }
+  #drawer { position: fixed; top: 0; bottom: 0; left: 0; width: min(430px, 94vw); background: #fff; z-index: 50;
+            transform: translateX(-105%); transition: transform .3s ease; box-shadow: -4px 0 24px rgba(0,0,0,.12);
+            overflow-y: auto; padding: 24px; }
+  #drawer.open { transform: none; }
+  #drawer h2 { font-size: 19px; margin-bottom: 4px; }
+  #drawer .sec { margin-top: 18px; }
+  #drawer .sec h4 { font-size: 14px; color: #6b7280; margin-bottom: 8px; }
+  .chip { display: inline-block; background: #f3f4f6; border-radius: 16px; padding: 4px 12px; font-size: 12px; margin: 2px 4px 2px 0; }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+  .kv div { background: #f9fafb; border-radius: 8px; padding: 8px 10px; }
+  .kv b { display: block; font-size: 16px; margin-top: 2px; }
+  .tkt { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+  .close-x { float: left; background: #f3f4f6; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; }
+  tr.clickable { cursor: pointer; } tr.clickable:hover td { background: #f9fafb; }
 </style>
 </head>
 <body>
-<header><h1>AION</h1><span>منصة الذكاء الاصطناعي للمؤسسات — لوحة المتابعة</span></header>
-<nav>
-  <button class="active" data-tab="overview">نظرة عامة</button>
-  <button data-tab="customers">العملاء</button>
-  <button data-tab="actions">الإجراءات</button>
-  <button data-tab="convs">المحادثات</button>
-  <button data-tab="approvals">الموافقات</button>
-  <button data-tab="chat">المساعد</button>
-</nav>
+<aside id="sidebar">
+  <div class="logo"><h1>AION</h1><span>منصة الذكاء الاصطناعي للمؤسسات</span></div>
+  <nav>
+    <button class="active" data-tab="overview"><span>📊</span><span class="lbl">نظرة عامة</span></button>
+    <button data-tab="customers"><span>👥</span><span class="lbl">العملاء</span></button>
+    <button data-tab="actions"><span>✅</span><span class="lbl">الإجراءات</span></button>
+    <button data-tab="convs"><span>💬</span><span class="lbl">المحادثات</span></button>
+    <button data-tab="approvals"><span>✋</span><span class="lbl">الموافقات</span></button>
+    <button data-tab="chat"><span>🤖</span><span class="lbl">المساعد</span></button>
+  </nav>
+  <div class="foot">لوحة المتابعة — v1</div>
+</aside>
+<div id="content">
+<div id="topbar">نظرة عامة</div>
 <main>
   <section id="tab-overview" class="tab active">
     <div class="cards" id="stats"></div>
@@ -81,16 +122,78 @@
     </div>
   </section>
 </main>
+</div>
+<div id="overlay" onclick="closeDrawer()"></div>
+<aside id="drawer"></aside>
 <script>
 const $ = id => document.getElementById(id);
 const get = p => fetch(p).then(r => r.json());
 let customers = [];
+let actionsCache = [], followupsCache = [], convByTicket = {};
+
+function closeDrawer() {
+  $("drawer").classList.remove("open");
+  $("overlay").classList.remove("open");
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+async function openDrawer(id) {
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  const tickets = await get("/api/tickets?customer_id=" + encodeURIComponent(id));
+  const a = actionsCache.find(x => x.customer_id === id);
+  const f = followupsCache.find(x => x.customer_id === id);
+  const nba = a?.next_best_action || {};
+
+  const sigChips = (a?.signals || []).map(s =>
+    `<span class="chip">${s.signal}</span>`).join("");
+  const ticketsHtml = tickets.map(t => {
+    const conv = convByTicket[t.id];
+    return `<div class="tkt"><b>${t.subject || t.id}</b>
+      <span class="badge ${t.status === "مفتوحة" || t.status === "open" ? "critical" : "neutral"}">${t.status || ""}</span>
+      ${conv ? `<span class="badge ${conv.overall_sentiment}">${conv.overall_sentiment}</span>` : ""}
+      ${conv?.summary ? `<div class="meta">${conv.summary}</div>` : ""}</div>`;
+  }).join("") || '<p class="meta">لا تذاكر.</p>';
+
+  $("drawer").innerHTML = `
+    <button class="close-x" onclick="closeDrawer()">✕</button>
+    <h2>${c.name}</h2>
+    <div><span class="badge ${c.churn_level}">${c.churn_level}</span>
+      <span class="chip">${c.segment || ""}</span>
+      <span class="chip">${c.id}</span></div>
+
+    <div class="sec"><h4>خطر التسرب</h4>
+      <div class="bar" style="height:12px"><i style="width:${(c.churn_score || 0) * 100}%"></i></div>
+      <div class="meta">النتيجة: ${c.churn_score ?? "-"}</div>
+      ${sigChips ? `<div style="margin-top:6px">${sigChips}</div>` : ""}</div>
+
+    <div class="sec"><h4>نبذة</h4><div class="kv">
+      <div>القيمة العمرية<b>${c.lifetime_value?.toLocaleString("ar-EG") || "-"}</b></div>
+      <div>مستوى التفاعل<b>${c.engagement_tier || "-"}</b></div>
+      <div>آخر تفاعل<b>${c.days_since_last_interaction ?? "-"} يوم</b></div>
+      <div>تذاكر مفتوحة<b>${c.open_ticket_count ?? 0}</b></div>
+    </div></div>
+
+    <div class="sec"><h4>التذاكر (${tickets.length})</h4>${ticketsHtml}</div>
+
+    <div class="sec"><h4>الإجراء المقترح</h4>
+      <div class="action-card" style="margin:0"><h3>${nba.action || c.recommended_action || ""}</h3>
+      <p class="prio">عبر ${nba.channel || ""} — أولوية ${nba.priority ?? ""}</p>
+      <p>${nba.reason || ""}</p></div></div>
+
+    ${f ? `<div class="sec"><h4>مسودة المتابعة ${f.needs_approval ? "⚠️ تحتاج موافقة" : ""}</h4>
+      <div class="tkt">${f.message}</div></div>` : ""}`;
+
+  $("drawer").classList.add("open");
+  $("overlay").classList.add("open");
+}
 
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
   b.classList.add("active");
   $("tab-" + b.dataset.tab).classList.add("active");
+  $("topbar").textContent = b.querySelector(".lbl").textContent;
 });
 
 async function load() {
@@ -98,6 +201,10 @@ async function load() {
   const actions = await get("/api/actions");
   const convs = await get("/api/conversations");
   const apprs = await get("/api/approvals");
+  actionsCache = actions;
+  followupsCache = await get("/api/followups");
+  convByTicket = {};
+  convs.forEach(c => { convByTicket[c.ticket_id] = c; });
 
   const crit = customers.filter(c => c.churn_level === "critical").length;
   const openT = customers.reduce((s, c) => s + (c.open_ticket_count || 0), 0);
@@ -107,7 +214,8 @@ async function load() {
   ].map(([n, l]) => `<div class="card"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join("");
 
   $("customers-body").innerHTML = customers.map(c => `
-    <tr><td><b>${c.name}</b><br><span class="meta">${c.id}</span></td>
+    <tr class="clickable" onclick="openDrawer('${c.id}')">
+    <td><b>${c.name}</b><br><span class="meta">${c.id}</span></td>
     <td>${c.segment || ""}</td>
     <td><div class="bar"><i style="width:${(c.churn_score || 0) * 100}%"></i></div>
         <span class="meta">${c.churn_score ?? "-"}</span></td>

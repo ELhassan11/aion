@@ -16,7 +16,7 @@ import json
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -66,6 +66,16 @@ class Handler(BaseHTTPRequestHandler):
                 items = list(items.values())
             self._send_json([i for i in items
                              if i.get("status") == "pending"])
+        elif path == "/api/tickets":
+            qs = parse_qs(urlparse(self.path).query)
+            cid = qs.get("customer_id", [""])[0]
+            tpath = Path("data/sample/tickets.json")
+            tickets = (json.loads(tpath.read_text(encoding="utf-8"))
+                       if tpath.exists() else [])
+            self._send_json([t for t in tickets
+                             if t.get("customer_id") == cid])
+        elif path == "/api/followups":
+            self._send_json(_read_json("followups.json"))
         else:
             self._not_found()
 
