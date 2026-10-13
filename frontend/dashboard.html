@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AION — لوحة المتابعة</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f5f7fa; color: #1f2937; }
+  header { background: #111827; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header span { color: #9ca3af; font-size: 13px; }
+  nav { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; display: flex; gap: 4px; }
+  nav button { background: none; border: none; padding: 14px 16px; font-size: 15px; cursor: pointer; color: #6b7280; border-bottom: 3px solid transparent; font-family: inherit; }
+  nav button.active { color: #111827; border-bottom-color: #2563eb; font-weight: 600; }
+  main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .tab { display: none; } .tab.active { display: block; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card .num { font-size: 32px; font-weight: 700; }
+  .card .lbl { color: #6b7280; font-size: 13px; margin-top: 4px; }
+  table { width: 100%; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-collapse: collapse; }
+  th, td { padding: 12px 14px; text-align: right; font-size: 14px; border-bottom: 1px solid #f3f4f6; }
+  th { background: #f9fafb; color: #6b7280; font-weight: 600; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .critical { background: #fee2e2; color: #b91c1c; }
+  .watch { background: #fef3c7; color: #b45309; }
+  .healthy { background: #dcfce7; color: #15803d; }
+  .positive { background: #dcfce7; color: #15803d; }
+  .negative { background: #fee2e2; color: #b91c1c; }
+  .neutral { background: #f3f4f6; color: #4b5563; }
+  .bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; min-width: 80px; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, #22c55e, #eab308, #ef4444); }
+  .action-card, .conv-card, .appr-card { background: #fff; border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .action-card .prio { font-size: 12px; color: #6b7280; }
+  .action-card h3, .conv-card h3 { font-size: 16px; margin-bottom: 6px; }
+  .action-card p, .conv-card p { font-size: 14px; color: #4b5563; }
+  .btn { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 14px; cursor: pointer; font-family: inherit; }
+  .btn.danger { background: #dc2626; } .btn.ok { background: #16a34a; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .chat-box { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 18px; }
+  #chat-log { height: 320px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  .msg { margin-bottom: 10px; font-size: 14px; line-height: 1.7; }
+  .msg.user { text-align: left; } .msg.user span { background: #dbeafe; padding: 8px 12px; border-radius: 12px; display: inline-block; }
+  .msg.ai span { background: #f3f4f6; padding: 8px 12px; border-radius: 12px; display: inline-block; }
+  .row { display: flex; gap: 8px; }
+  input, select { font-family: inherit; font-size: 14px; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+  #chat-input { flex: 1; }
+  .meta { font-size: 12px; color: #9ca3af; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header><h1>AION</h1><span>منصة الذكاء الاصطناعي للمؤسسات — لوحة المتابعة</span></header>
+<nav>
+  <button class="active" data-tab="overview">نظرة عامة</button>
+  <button data-tab="customers">العملاء</button>
+  <button data-tab="actions">الإجراءات</button>
+  <button data-tab="convs">المحادثات</button>
+  <button data-tab="approvals">الموافقات</button>
+  <button data-tab="chat">المساعد</button>
+</nav>
+<main>
+  <section id="tab-overview" class="tab active">
+    <div class="cards" id="stats"></div>
+  </section>
+  <section id="tab-customers" class="tab">
+    <table><thead><tr><th>العميل</th><th>الشريحة</th><th>خطر التسرب</th><th>المستوى</th><th>الإجراء المقترح</th></tr></thead>
+    <tbody id="customers-body"></tbody></table>
+  </section>
+  <section id="tab-actions" class="tab"><div id="actions-list"></div></section>
+  <section id="tab-convs" class="tab"><div id="convs-list"></div></section>
+  <section id="tab-approvals" class="tab"><div id="approvals-list"></div></section>
+  <section id="tab-chat" class="tab">
+    <div class="chat-box">
+      <div id="chat-log"></div>
+      <div class="row">
+        <select id="chat-cust"></select>
+        <input id="chat-input" placeholder="اكتب رسالة العميل...">
+        <button class="btn" id="chat-send">إرسال</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const get = p => fetch(p).then(r => r.json());
+let customers = [];
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  $("tab-" + b.dataset.tab).classList.add("active");
+});
+
+async function load() {
+  customers = await get("/api/customers");
+  const actions = await get("/api/actions");
+  const convs = await get("/api/conversations");
+  const apprs = await get("/api/approvals");
+
+  const crit = customers.filter(c => c.churn_level === "critical").length;
+  const openT = customers.reduce((s, c) => s + (c.open_ticket_count || 0), 0);
+  $("stats").innerHTML = [
+    [customers.length, "عميل"], [crit, "خطر تسرب حرج"],
+    [openT, "تذاكر مفتوحة"], [apprs.length, "موافقات معلقة"],
+  ].map(([n, l]) => `<div class="card"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join("");
+
+  $("customers-body").innerHTML = customers.map(c => `
+    <tr><td><b>${c.name}</b><br><span class="meta">${c.id}</span></td>
+    <td>${c.segment || ""}</td>
+    <td><div class="bar"><i style="width:${(c.churn_score || 0) * 100}%"></i></div>
+        <span class="meta">${c.churn_score ?? "-"}</span></td>
+    <td><span class="badge ${c.churn_level}">${c.churn_level}</span></td>
+    <td>${c.recommended_action || ""}</td></tr>`).join("");
+
+  $("actions-list").innerHTML = actions.map(a => {
+    const n = a.next_best_action || {};
+    return `<div class="action-card"><h3>${a.name} <span class="badge ${a.churn_level}">${a.churn_level}</span></h3>
+      <p>→ <b>${n.action || ""}</b> عبر ${n.channel || ""}</p>
+      <p class="prio">أولوية ${n.priority} — ${n.reason || ""}</p>
+      ${a.signals?.length ? `<p class="meta">إشارات: ${a.signals.map(s => s.signal).join(", ")}</p>` : ""}</div>`;
+  }).join("") || "<p>لا إجراءات.</p>";
+
+  $("convs-list").innerHTML = convs.map(c => `
+    <div class="conv-card"><h3>${c.ticket_id} — ${c.subject || ""}
+      <span class="badge ${c.overall_sentiment}">${c.overall_sentiment}</span>
+      ${c.needs_human ? '<span class="badge critical">يحتاج بشري ⚠️</span>' : ""}</h3>
+      ${c.summary ? `<p>${c.summary}</p>` : ""}
+      ${c.escalation_signals?.length ? `<p class="meta">إشارات: ${c.escalation_signals.join(", ")}</p>` : ""}</div>`).join("")
+    || "<p>لا محادثات محللة.</p>";
+
+  $("approvals-list").innerHTML = apprs.map(a => `
+    <div class="appr-card"><h3>${a.action} <span class="badge watch">${a.risk}</span></h3>
+      ${a.details ? `<p>${a.details}</p>` : ""}
+      <p class="meta">${a.id} — ${a.created_at || ""}</p>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ok" onclick="decide('${a.id}', true)">موافقة ✅</button>
+        <button class="btn danger" onclick="decide('${a.id}', false)">رفض ❌</button>
+      </div></div>`).join("") || "<p>لا موافقات معلقة. 🎉</p>";
+
+  $("chat-cust").innerHTML = customers.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+}
+
+async function decide(id, approved) {
+  await fetch("/api/approvals", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, approved }) });
+  load();
+}
+
+async function sendChat() {
+  const input = $("chat-input"), log = $("chat-log");
+  const text = input.value.trim(); if (!text) return;
+  input.value = ""; input.disabled = true;
+  log.innerHTML += `<div class="msg user"><span>${text}</span></div>`;
+  log.scrollTop = log.scrollHeight;
+  const res = await fetch("/api/chat", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ customer_id: $("chat-cust").value, message: text }) }).then(r => r.json());
+  if (res.error) {
+    log.innerHTML += `<div class="msg ai"><span>خطأ: ${res.error}</span></div>`;
+  } else {
+    const ok = res.verification?.passed ? "✅" : "⚠️";
+    const appr = res.needs_approval ? " — يحتاج موافقة بشرية" : "";
+    log.innerHTML += `<div class="msg ai"><span>${res.reply}<div class="meta">${ok} تحقق${appr}</div></span></div>`;
+  }
+  log.scrollTop = log.scrollHeight; input.disabled = false; input.focus();
+}
+$("chat-send").onclick = sendChat;
+$("chat-input").onkeydown = e => { if (e.key === "Enter") sendChat(); };
+
+load();
+</script>
+</body>
+</html>
