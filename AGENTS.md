@@ -9,7 +9,7 @@ AION — منصة ذكاء اصطناعي مؤسسي (Agentic AI): تحويل ا
 ## خريطة المستودع
 
 - `ingestion/` استقبال البيانات (R3+R4) · `rag/` الاسترجاع (R1) · `agents/` الوكلاء (R2)
-- `knowledge-graph/` الرسم المعرفي (R4) · `backend/` واجهات FastAPI (R5)
+- `knowledge_graph/` الرسم المعرفي (R4) · `backend/` واجهات FastAPI (R5)
 - `frontend/` اللوحة (R6) · `customer-intelligence/` وحدة العملاء (R2+R4) · `eval/` التقييم (R7)
 - `scripts/` سكربتات مساعدة · `tests/` الاختبارات · `examples/` أمثلة استخدام · `docs/` الوثائق
 
