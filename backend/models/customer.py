@@ -32,6 +32,10 @@ class CustomerProfile(BaseModel):
     churn_risk: float = Field(default=0.0, ge=0.0, le=1.0)
     tags: list[str] = Field(default_factory=list)
     last_interaction_at: datetime | None = None
+    # Computed aggregates (filled by the Customer 360 builder, P1-T05).
+    ticket_count: int = Field(default=0, ge=0)
+    open_ticket_count: int = Field(default=0, ge=0)
+    channels: list[str] = Field(default_factory=list)
 
 
 class TicketMessage(BaseModel):
