@@ -25,6 +25,8 @@ sys.path.insert(0, str(ROOT))
 
 from backend.models import DocumentChunk, SourceType  # noqa: E402
 
+from .extractors import extract_docx, extract_pdf  # noqa: E402
+
 
 def _doc_id(source_uri: str) -> str:
     return "doc-" + hashlib.sha256(source_uri.encode()).hexdigest()[:12]
@@ -76,7 +78,23 @@ class TextReader(SourceReader):
         return path.read_text(encoding="utf-8")
 
 
-READERS: list[SourceReader] = [MarkdownReader(), TextReader()]
+class PdfReader(SourceReader):
+    extensions = (".pdf",)
+    source_type = SourceType.PDF
+
+    def read(self, path: Path) -> str:
+        return extract_pdf(path)
+
+
+class DocxReader(SourceReader):
+    extensions = (".docx",)
+    source_type = SourceType.DOCX
+
+    def read(self, path: Path) -> str:
+        return extract_docx(path)
+
+
+READERS: list[SourceReader] = [MarkdownReader(), TextReader(), PdfReader(), DocxReader()]
 
 
 def reader_for(path: Path) -> SourceReader | None:
