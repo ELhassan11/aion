@@ -8,3 +8,9 @@
 {"question": "ما مدة ضمان الشاحن السريع؟", "must_contain": ["سنة واحدة"]}
 {"question": "ما هو متوسط تقييم العملاء؟", "must_contain": ["4.6"]}
 {"question": "كم سعر المكنسة الكهربائية الصامتة؟", "must_contain": ["3,200", "مكنسة"]}
+{"question": "عايز أعرف الهيدفون اللي بطاريتها بتقعد 30 ساعة بكام؟", "must_contain": ["1,499"], "difficulty": "paraphrase"}
+{"question": "لو طلبت حاجة بـ 800 جنيه للإسكندرية، هدفع شحن قد إيه؟", "must_contain": ["55"], "difficulty": "reasoning"}
+{"question": "الضمان بتاع الشاحن والسماعة مختلف ولا زي بعض؟", "must_contain": ["سنة واحدة", "سنتان"], "difficulty": "multi-product"}
+{"question": "إيه المنتجات اللي ضمانها أكتر من سنة؟", "must_contain": ["X200", "مكنسة"], "difficulty": "multi-product"}
+{"question": "اشتريت شاحن وطلع فيه عيب مصنعي بعد 20 يوم، أقدر أستبدله ببلاش؟", "must_contain": ["30", "دون أي رسوم"], "difficulty": "multi-hop"}
+{"question": "طلبية بـ 1500 جنيه للقاهرة، الشحن مجاني ولا هدفع؟", "must_contain": ["مجاني"], "difficulty": "reasoning"}
