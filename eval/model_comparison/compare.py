@@ -83,32 +83,6 @@ def ollama_generate(model: str, prompt: str, url: str) -> str:
         return json.load(r)["response"]
 
 
-def gemini_generate(model: str, prompt: str) -> str:
-    key = os.getenv("GEMINI_API_KEY")
-    if not key:
-        raise RuntimeError("set GEMINI_API_KEY (from Google AI Studio)")
-    body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent?key={key}"
-    )
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = json.load(r)
-    return data["candidates"][0]["content"]["parts"][0]["text"]
-
-
-def gemini_list_models() -> None:
-    key = os.getenv("GEMINI_API_KEY")
-    if not key:
-        raise RuntimeError("set GEMINI_API_KEY (from Google AI Studio)")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
-    with urllib.request.urlopen(url, timeout=30) as r:
-        data = json.load(r)
-    for m in data.get("models", []):
-        print(m["name"].replace("models/", ""))
-
-
 def score(answer: str, expected_keywords: list) -> float:
     if not expected_keywords:
         return 0.0
@@ -118,20 +92,11 @@ def score(answer: str, expected_keywords: list) -> float:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--models", default=None,
-                    help="comma-separated, e.g. gpt-4o-mini or ollama:qwen2.5:7b")
+    ap.add_argument("--models", required=True, help="comma-separated, e.g. gpt-4o-mini or ollama:qwen2.5:7b")
     ap.add_argument("--ollama-url", default="http://localhost:11434")
     ap.add_argument("--base-url", default="https://api.openai.com/v1",
                     help="API base URL (use https://openrouter.ai/api/v1 for OpenRouter)")
-    ap.add_argument("--list-gemini-models", action="store_true",
-                    help="list models available to your GEMINI_API_KEY and exit")
     args = ap.parse_args()
-
-    if args.list_gemini_models:
-        gemini_list_models()
-        return
-    if not args.models:
-        ap.error("--models is required (unless --list-gemini-models)")
 
     cases = load_cases()
     rows = []
@@ -142,8 +107,6 @@ def main() -> None:
             try:
                 if model.startswith("ollama:"):
                     answer = ollama_generate(model[len("ollama:"):], prompt, args.ollama_url)
-                elif model.startswith("gemini:"):
-                    answer = gemini_generate(model[len("gemini:"):], prompt)
                 else:
                     answer = openai_generate(model, prompt, args.base_url)
                 s = score(answer, case["expected_keywords"])
@@ -167,7 +130,7 @@ def main() -> None:
             f, ensure_ascii=False, indent=2,
         )
 
-    print("| النموذج | متوسط الدرجة |")
+    print("| Model | Avg Score |")
     print("|---|---|")
     for model, avg, _ in sorted(rows, key=lambda r: r[1], reverse=True):
         print(f"| {model} | {avg:.2f} |")

@@ -33,16 +33,6 @@ OPENROUTER_API_KEY=sk-or-... python eval/model_comparison/compare.py \
 
 المجاني محدود (حوالي 50 طلب/يوم) — والـ 8 اختبارات بتوعنا بيستهلكوا 8 طلبات بس لكل موديل، يعني في الأمان.
 
-### Google AI Studio (Gemini — حصة مجانية سخية)
-
-1. خد مفتاح مجاني من aistudio.google.com.
-2. حطه في `.env`: `GEMINI_API_KEY=...`
-3. شغل:
-
-```bash
-python eval/model_comparison/compare.py --models "gemini:gemini-2.0-flash"
-```
-
 ## التقييم
 
 الدرجة = نسبة الكلمات المفتاحية المتوقعة الموجودة في الإجابة.
