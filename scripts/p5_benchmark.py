@@ -100,10 +100,15 @@ def main() -> None:
     for name, fn in configs.items():
         t0 = time.time()
         report = evaluate(questions, fn, args.top_k)
+        by_diff: dict[str, list[float]] = {}
+        for item, p in zip(questions, report["per_question"]):
+            by_diff.setdefault(item.get("difficulty", "easy"), []).append(p["hit"])
         results["configs"][name] = {
             "mean_hit": round(report["mean_hit"], 3),
             "mean_keyword_recall": round(report["mean_keyword_recall"], 3),
             "seconds": round(time.time() - t0, 1),
+            "by_difficulty": {d: round(sum(h) / len(h), 3)
+                              for d, h in by_diff.items()},
             "per_question": [
                 {"q": p["question"][:60], "hit": p["hit"]} for p in report["per_question"]
             ],
@@ -132,6 +137,8 @@ def main() -> None:
     for name, r in results["configs"].items():
         print(f"{name:<24} {r['mean_hit']:<8.3f} "
               f"{r['mean_keyword_recall']:<9.3f} {r['seconds']}s")
+        for d, h in sorted(r["by_difficulty"].items()):
+            print(f"  └─ {d:<20} hit={h:.3f}")
     at = results["agent_tests"]
     print(f"\nagent tests: {'✅ PASS' if at['passed'] else '❌ FAIL'} "
           f"({at['seconds']}s)")
